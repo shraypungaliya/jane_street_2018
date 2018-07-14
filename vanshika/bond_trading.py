@@ -43,6 +43,55 @@ def read_from_exchange(exchange):
     print ('READ EXCHANGE: ', line)
     return line
 
+# ~~~~~============== DATA STRUCTURE ==============~~~~~
+LIMITS = {
+    "BOND": 100,
+    "AAPL": 100,
+    "MSFT": 100,
+    "GOOG": 100,
+    "XLK" : 100,
+    "BABZ": 10,
+    "BABA": 10
+}
+OUR_STATEMENT = [
+]
+
+OUR_BOOK = {
+    "BUY": {
+    },
+
+    "SELL": {
+    }
+}
+
+for sym, limit in LIMITS.iteritems():
+    OUR_STATEMENT.append({sym: []})
+    OUR_BOOK["BUY"][sym] = \
+        (0, {"size": None,
+               "price": None,
+               "id": None
+         })
+    OUR_BOOK["SELL"][sym] = \
+        (0, {"size": None,
+         "price": None,
+         "id": None
+         })
+
+
+def parse_exchange(line):
+    if line['type'] == 'ack':
+        OUR_BOOK[line['dir']][line['symbol']][line['ID']] = {'price': line['price'], 'size': line['size']}
+
+    elif line['type'] == 'out':
+        del OUR_BOOK[line['dir']][line['symbol']][line['ID']]
+
+    elif line['type'] == 'fill':
+        mult_dir = 1
+        if line['dir'] == 'SELL':
+            mult_dir = -1
+        OUR_BOOK[line['dir']][line['symbol']][line['ID']]['size'] += line['size']
+
+
 # ~~~~~============== BOND EXCHANGE ==============~~~~~
 def exchange_bonds(price):
     if price is None:
@@ -54,11 +103,28 @@ def exchange_bonds(price):
     else:
         return None
 
+
 def read_buy_sell_BOND(json_data):
     if json_data['type'] == "Trade":
         if json_data['symbol'] == "Bond":
             return json_data['price']
     return None
+
+
+def simple_bond(exchange):
+    count = 0
+    while True:
+        if OUR_BOOK['BUY']['BONDS'][] is not None:
+            if (val != 'reject'):
+                write_to_exchange(exchange,
+                                  {"type": "add", "order_id": count, "symbol": "BOND", "dir": "BUY", "price": 999,
+                                   "size": 1})
+                print('buy')
+                write_to_exchange(exchange,
+                                  {"type": "add", "order_id": count + 1, "symbol": "BOND", "dir": "SELL", "price": 1000,
+                                   "size": 1})
+                print('sell')
+                count += 2
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
@@ -67,24 +133,8 @@ def main():
     write_to_exchange(exchange, {"type": "hello", "team": team_name.upper()})
     hello_from_exchange = read_from_exchange(exchange)
     print("The exchange replied:", hello_from_exchange, file=sys.stderr)
-    count = 0
 
-    while True:
-        val = read_from_exchange(exchange)['type']
-        if val is not None:
-            if (val != 'reject'):
-                # to_write = exchange_bonds(read_buy_sell_BOND(read_from_exchange(exchange)))
-                write_to_exchange(exchange, {"type": "add", "order_id": count, "symbol": "BOND", "dir": "BUY", "price": 999, "size": 1})
-                print('buy')
-                write_to_exchange(exchange, {"type": "add", "order_id": count+1, "symbol": "BOND", "dir": "SELL", "price": 1000,
-                                             "size": 1})
-                print('sell')
-                count += 2
-
-    # A common mistake people make is to call write_to_exchange() > 1
-    # time for every read_from_exchange() response.
-    # Since many write messages generate marketdata, this will cause an
-    # exponential explosion in pending messages. Please, don't do that!
+    simple_bond(exchange)
 
 if __name__ == "__main__":
     main()
