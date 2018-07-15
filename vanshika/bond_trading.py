@@ -114,17 +114,18 @@ def read_buy_sell_BOND(json_data):
 def simple_bond(exchange):
     count = 0
     while True:
-        if OUR_BOOK['BUY']['BONDS'][] is not None:
-            if (val != 'reject'):
-                write_to_exchange(exchange,
-                                  {"type": "add", "order_id": count, "symbol": "BOND", "dir": "BUY", "price": 999,
-                                   "size": 1})
-                print('buy')
-                write_to_exchange(exchange,
-                                  {"type": "add", "order_id": count + 1, "symbol": "BOND", "dir": "SELL", "price": 1000,
-                                   "size": 1})
-                print('sell')
-                count += 2
+        if OUR_BOOK_COUNTER['BOND']['size'] < LIMITS['BOND']:
+            write_to_exchange(exchange,
+                                {"type": "add", "order_id": count, "symbol": "BOND", "dir": "BUY", "price": 999,
+                                "size": 3})
+            print('buy')
+            count += 1
+        if OUR_BOOK_COUNTER['BOND']['size'] > 0:
+            write_to_exchange(exchange,
+                                {"type": "add", "order_id": count, "symbol": "BOND", "dir": "SELL", "price": 1000,
+                                "size": 3})
+            print('sell')
+            count += 1
 
 # ~~~~~============== MAIN LOOP ==============~~~~~
 
