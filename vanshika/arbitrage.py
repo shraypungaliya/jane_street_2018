@@ -94,8 +94,11 @@ def process_signals(exchange):
             return True
     elif type == 'ack':
         oid = line['order_id']
-        CURRENT_OID[oid] = UNACKNOWLEDGED_OID[oid]
-        del UNACKNOWLEDGED_OID[oid]
+        try:
+            CURRENT_OID[oid] = UNACKNOWLEDGED_OID[oid]
+            del UNACKNOWLEDGED_OID[oid]
+        except:
+            return False
     elif type == 'reject':
         oid = line['order_id']
         try:
@@ -109,8 +112,6 @@ def process_signals(exchange):
             COMPLETE_OID[oid] = CURRENT_OID[oid]
             del CURRENT_OID[oid]
         except (KeyError):
-            #COMPLETE_OID[oid] = UNACKNOWLEDGED_OID[oid]
-            #del UNACKNOWLEDGED_OID[oid]
             return False
     elif type == 'fill':
         do_fill(line)
@@ -154,11 +155,12 @@ def arbitrage_bab(exchange, order_number, count):
     babz_fair = CURRENT_STATUS['BABZ']['fair_value']
     babz_sell = CURRENT_STATUS['BABZ']['best_sell']
     babz_buy = CURRENT_STATUS['BABZ']['best_buy']
-    print("")
+    print("BABA_FAIR: ", baba_fair, " BABZ_FAIR: ", babz_fair)
 
     if baba_fair is not None and babz_fair is not None:
         print("in not none")
         if baba_fair + BAB_BUFFER < babz_fair:
+            print("HERE")
             add_oid_baba = {"type": "add", "order_id": count, "symbol": "BABA", "dir": "BUY",
                             "price": baba_buy + BUY_SELL_SPREAD,
                             "size": order_number}
@@ -166,7 +168,7 @@ def arbitrage_bab(exchange, order_number, count):
             add_oid_babz = {"type": "add", "order_id": count + 1, "symbol": "BABZ", "dir": "SELL",
                             "price": babz_sell - BUY_SELL_SPREAD,
                             "size": order_number}
-            write_to_exchange(exchange, add_oid_baba)
+            write_to_exchange(exchange, add_oid_babz)
 
             CURRENT_STATUS['BABA']['our_buy'] = baba_buy + BUY_SELL_SPREAD
             UNACKNOWLEDGED_OID[count] = add_oid_baba
